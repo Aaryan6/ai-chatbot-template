@@ -22,7 +22,7 @@ const exampleMessages = [
 export function EmptyScreen({ setInput }: Pick<UseChatHelpers, 'setInput'>) {
   return (
     <div className="mx-auto max-w-2xl px-4">
-      <div className="rounded-lg border bg-background p-8">
+      <div className="rounded-lg bg-white text-black p-8">
         <h1 className="mb-2 text-lg font-semibold">
           Welcome to the Supabaseified Next.js AI Chatbot!
         </h1>
@@ -39,10 +39,10 @@ export function EmptyScreen({ setInput }: Pick<UseChatHelpers, 'setInput'>) {
             <Button
               key={index}
               variant="link"
-              className="h-auto p-0 text-base"
+              className="h-auto p-0 text-base text-muted-foreground"
               onClick={() => setInput(message.message)}
             >
-              <IconArrowRight className="mr-2 text-muted-foreground" />
+              <IconArrowRight className="mr-2" />
               {message.heading}
             </Button>
           ))}

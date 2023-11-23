@@ -1,6 +1,6 @@
 import 'server-only'
 import { OpenAIStream, StreamingTextResponse } from 'ai'
-import { Configuration, OpenAIApi } from 'openai-edge'
+// import { Configuration, OpenAIApi } from 'openai-edge'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { Database } from '@/lib/db_types'
@@ -8,13 +8,19 @@ import { Database } from '@/lib/db_types'
 import { auth } from '@/auth'
 import { nanoid } from '@/lib/utils'
 
-export const runtime = 'edge'
+import OpenAI from 'openai'
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY // defaults to process.env["OPENAI_API_KEY"]
 })
 
-const openai = new OpenAIApi(configuration)
+export const runtime = 'nodejs'
+
+// const configuration = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY
+// })
+
+// const openai = new OpenAIApi(configuration)
 
 export async function POST(req: Request) {
   const cookieStore = cookies()
@@ -22,7 +28,7 @@ export async function POST(req: Request) {
     cookies: () => cookieStore
   })
   const json = await req.json()
-  const { messages, previewToken } = json
+  const { messages } = json
   const userId = (await auth({ cookieStore }))?.user.id
 
   if (!userId) {
@@ -31,15 +37,37 @@ export async function POST(req: Request) {
     })
   }
 
-  if (previewToken) {
-    configuration.apiKey = previewToken
+  const json_format = {
+    answer: '',
+    nextPossibleQuestions: [
+      {
+        question: ''
+      },
+      {
+        question: ''
+      },
+      {
+        question: ''
+      }
+    ]
   }
 
-  const res = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    messages,
+  const res = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo-1106',
+    messages: [
+      {
+        role: 'system',
+        content: `You are a helpful assistant designed to output JSON in this format ${JSON.stringify(
+          json_format
+        )}, nextPossibleQuestions is an array of some possible questions that user can ask.`
+      },
+      ...messages
+    ],
     temperature: 0.7,
-    stream: true
+    stream: true,
+    response_format: {
+      type: 'json_object'
+    }
   })
 
   const stream = OpenAIStream(res, {
@@ -67,5 +95,6 @@ export async function POST(req: Request) {
     }
   })
 
+  // const stream = OpenAIStream(res)
   return new StreamingTextResponse(stream)
 }

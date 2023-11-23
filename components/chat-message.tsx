@@ -7,15 +7,30 @@ import { CodeBlock } from '@/components/ui/codeblock'
 import { MemoizedReactMarkdown } from '@/components/markdown'
 import { IconOpenAI, IconUser } from '@/components/ui/icons'
 import { ChatMessageActions } from '@/components/chat-message-actions'
+import { UseChatHelpers } from 'ai/react/dist'
+import SuggestedQuestionForm from './suggested-question-form'
 
-export interface ChatMessageProps {
+export interface ChatMessageProps
+  extends Pick<UseChatHelpers, 'append' | 'setInput'> {
   message: Message
+  setInput: UseChatHelpers['setInput']
+  id?: string
 }
 
-export function ChatMessage({ message, ...props }: ChatMessageProps) {
+export function ChatMessage({
+  message,
+  setInput,
+  id,
+  append,
+  ...props
+}: ChatMessageProps) {
   return (
     <div
-      className={cn('group relative mb-4 flex items-start md:-ml-12')}
+      className={cn(
+        `${
+          message.role === 'user' && 'flex-row-reverse'
+        } group relative my-4 flex max-w-xl items-start md:-ml-12`
+      )}
       {...props}
     >
       <div
@@ -28,9 +43,15 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
       >
         {message.role === 'user' ? <IconUser /> : <IconOpenAI />}
       </div>
-      <div className="ml-4 flex-1 space-y-2 overflow-hidden px-1">
+      <div
+        className={`${
+          message.role === 'user'
+            ? 'mr-4 rounded-tr-none'
+            : 'ml-4 rounded-tl-none'
+        } flex-1 space-y-2 overflow-hidden`}
+      >
         <MemoizedReactMarkdown
-          className="prose break-words dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
+          className="prose break-words rounded-md bg-white p-4 text-gray-800 dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
           remarkPlugins={[remarkGfm, remarkMath]}
           components={{
             p({ children }) {
@@ -68,8 +89,51 @@ export function ChatMessage({ message, ...props }: ChatMessageProps) {
             }
           }}
         >
-          {message.content}
+          {message.role === 'user'
+            ? message.content
+            : (() => {
+                try {
+                  const parsedContent = JSON.parse(
+                    message.content
+                      .replace(/\\n/g, '\\\\n')
+                      .replace(/\\'/g, "\\'")
+                  )
+                  return parsedContent.answer ?? message.content
+                } catch (error) {
+                  console.error('Error parsing JSON:', error)
+                  return message.content
+                }
+              })()}
         </MemoizedReactMarkdown>
+        {message.role === 'user'
+          ? null
+          : (() => {
+              try {
+                const parsedContent = JSON.parse(
+                  message.content
+                    .replace(/\\n/g, '\\\\n')
+                    .replace(/\\'/g, "\\'")
+                )
+                return parsedContent.nextPossibleQuestions?.map(
+                  (ques: { question: string }, i: number) => (
+                    <SuggestedQuestionForm
+                      ques={ques}
+                      key={i}
+                      setInput={setInput}
+                      onSubmit={async value => {
+                        await append({
+                          id,
+                          content: value,
+                          role: 'user'
+                        })
+                      }}
+                    />
+                  )
+                )
+              } catch (error) {
+                console.error('Error parsing JSON:', error)
+              }
+            })() ?? message.content}
         <ChatMessageActions message={message} />
       </div>
     </div>
