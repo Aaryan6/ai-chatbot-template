@@ -15,6 +15,8 @@ export interface ChatMessageProps
   message: Message
   setInput: UseChatHelpers['setInput']
   id?: string
+  index?: number
+  messagesLength?: number
 }
 
 export function ChatMessage({
@@ -22,6 +24,8 @@ export function ChatMessage({
   setInput,
   id,
   append,
+  index,
+  messagesLength,
   ...props
 }: ChatMessageProps) {
   return (
@@ -51,7 +55,7 @@ export function ChatMessage({
         } flex-1 space-y-2 overflow-hidden`}
       >
         <MemoizedReactMarkdown
-          className="prose break-words rounded-md bg-white p-4 text-gray-800 dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
+          className="prose break-words rounded-md bg-white p-4 py-2.5 text-sm text-gray-600 dark:prose-invert prose-p:leading-relaxed prose-pre:p-0"
           remarkPlugins={[remarkGfm, remarkMath]}
           components={{
             p({ children }) {
@@ -93,47 +97,43 @@ export function ChatMessage({
             ? message.content
             : (() => {
                 try {
-                  const parsedContent = JSON.parse(
-                    message.content
-                      .replace(/\\n/g, '\\\\n')
-                      .replace(/\\'/g, "\\'")
-                  )
+                  const parsedContent = JSON.parse(message.content)
                   return parsedContent.answer ?? message.content
                 } catch (error) {
-                  console.error('Error parsing JSON:', error)
                   return message.content
                 }
               })()}
         </MemoizedReactMarkdown>
-        {message.role === 'user'
-          ? null
-          : (() => {
-              try {
-                const parsedContent = JSON.parse(
-                  message.content
-                    .replace(/\\n/g, '\\\\n')
-                    .replace(/\\'/g, "\\'")
+        {/* question buttons */}
+        {messagesLength &&
+          index === messagesLength - 1 &&
+          message.role === 'assistant' &&
+          (() => {
+            try {
+              const parsedContent = JSON.parse(
+                message.content.replace(/\\n/g, '\\\\n').replace(/\\'/g, "\\'")
+              )
+              return parsedContent.nextPossibleQuestions?.map(
+                (ques: { question: string }, i: number) => (
+                  <SuggestedQuestionForm
+                    ques={ques}
+                    key={i}
+                    setInput={setInput}
+                    onSubmit={async value => {
+                      await append({
+                        id,
+                        content: value,
+                        role: 'user'
+                      })
+                    }}
+                  />
                 )
-                return parsedContent.nextPossibleQuestions?.map(
-                  (ques: { question: string }, i: number) => (
-                    <SuggestedQuestionForm
-                      ques={ques}
-                      key={i}
-                      setInput={setInput}
-                      onSubmit={async value => {
-                        await append({
-                          id,
-                          content: value,
-                          role: 'user'
-                        })
-                      }}
-                    />
-                  )
-                )
-              } catch (error) {
-                console.error('Error parsing JSON:', error)
-              }
-            })() ?? message.content}
+              )
+            } catch (error) {
+              return null
+            }
+          })()}
+
         <ChatMessageActions message={message} />
       </div>
     </div>

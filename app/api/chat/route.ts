@@ -70,6 +70,8 @@ export async function POST(req: Request) {
     }
   })
 
+  // console.log(res)
+
   const stream = OpenAIStream(res, {
     async onCompletion(completion) {
       const title = json.messages[0].content.substring(0, 100)

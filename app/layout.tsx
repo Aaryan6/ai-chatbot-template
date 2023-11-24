@@ -46,7 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <div className="flex min-h-screen flex-col">
             {/* @ts-ignore */}
             <Header />
-            <main className="flex flex-1 flex-col bg-emerald-50">
+            <main className="flex flex-1 flex-col bg-background">
               {children}
             </main>
           </div>

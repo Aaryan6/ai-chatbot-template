@@ -29,6 +29,8 @@ export function ChatList({ messages, setInput, id, append }: ChatList) {
             setInput={setInput}
             append={append}
             id={id}
+            index={index}
+            messagesLength={messages.length}
           />
           {/* {index < messages.length - 1 && (
             <Separator className="my-4 md:my-8" />

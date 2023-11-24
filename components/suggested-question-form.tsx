@@ -14,8 +14,7 @@ export default function SuggestedQuestionForm({
 }: ChatMessageProps) {
   return (
     <form
-      className="cursor-pointer rounded-md bg-white px-4 py-2 text-gray-600 hover:text-gray-800"
-      onClick={() => setInput(ques.question)}
+      className=""
       onSubmit={async e => {
         e.preventDefault()
         if (!ques.question?.trim()) {
@@ -25,7 +24,10 @@ export default function SuggestedQuestionForm({
         await onSubmit(ques.question)
       }}
     >
-      <button type="submit" className="text-left">
+      <button
+        type="submit"
+        className="w-full cursor-pointer rounded-md border border-emerald-200 bg-transparent px-4 py-2 text-sm text-emerald-500 hover:bg-emerald-100"
+      >
         {ques.question}
       </button>
     </form>
